@@ -77,3 +77,73 @@ Don't force them to remember a new password.
     </svg>
   </div>
 </section>
+
+<!-- Quick start -->
+<p> Here is a small example.
+</p>
+<ul>
+  <li> Your user lands on the login page. They enter their email address.
+  <li> That triggers the signup hook. They get a token.
+  <li> The user has got mail! They click on the
+    confirmation link.
+  <li> That triggers the login hook. They are verified!
+</ul>
+<pre>
+<span class="Identifier">let</span> EmailLogin = require(<span class="String">'email-login'</span>);
+<span class="Identifier">let</span> emailLogin = <span class="Operator">new</span> EmailLogin(<span class="javaScriptBraces">{</span>db: <span class="String">'./shadow'</span><span class="javaScriptBraces">}</span>);
+
+server.post(<span class="String">'signup'</span>, (req, res) =&gt; <span class="javaScriptBraces">{</span>
+  emailLogin.login((err, token, session) =&gt; <span class="javaScriptBraces">{</span>
+    res.setCookie(<span class="String">'token'</span>, token);
+    session.id  <span class="Comment">// Unique session identifier (a base64url string)</span>
+    emailLogin.proveEmail(<span class="javaScriptBraces">{</span>token: token, email: req.email<span class="javaScriptBraces">}</span>, (err) =&gt; <span class="javaScriptBraces">{</span>
+      <span class="Comment">// Sent verification email.</span>
+    <span class="javaScriptBraces">}</span>);
+  <span class="javaScriptBraces">}</span>);
+<span class="javaScriptBraces">}</span>);
+
+server.post(<span class="String">'login'</span>, (req, res) =&gt; <span class="javaScriptBraces">{</span>
+  emailLogin.confirmEmail(req.cookie.token, req.token, (err, token, session) =&gt; <span class="javaScriptBraces">{</span>
+    session.email            <span class="Comment">// you@example.com</span>
+    session.emailVerified()  <span class="Comment">// true</span>
+    <span class="Conditional">if</span> (token) <span class="javaScriptBraces">{</span> res.setCookie(<span class="String">'token'</span>, token); <span class="javaScriptBraces">}</span>
+  <span class="javaScriptBraces">}</span>);
+<span class="javaScriptBraces">}</span>);
+
+server.request((req, res) =&gt; <span class="javaScriptBraces">{</span>
+  emailLogin.authenticate(req.cookie.token, (err, authenticated, session) =&gt; <span class="javaScriptBraces">{</span>
+    <span class="Comment">// Set the current identity.</span>
+    <span class="Conditional">if</span> (authenticated) <span class="javaScriptBraces">{</span>
+      res.user = <span class="javaScriptBraces">{</span>id: session.id<span class="javaScriptBraces">}</span>;
+      <span class="Conditional">if</span> (session.emailVerified()) <span class="javaScriptBraces">{</span>  <span class="Comment">// Or you can refuse auth if you want.</span>
+        res.user.email = session.email;
+      <span class="javaScriptBraces">}</span>
+    <span class="javaScriptBraces">}</span> <span class="Conditional">else</span> <span class="javaScriptBraces">{</span> res.write(loginPage); <span class="javaScriptBraces">}</span>
+  <span class="javaScriptBraces">}</span>);
+<span class="javaScriptBraces">}</span>);
+</pre>
+
+<script>
+function selectNode(e) {
+  if (e.target.select) {
+    e.target.select();
+  } else {
+    if (document.selection) {
+      var range = document.body.createTextRange();
+      range.moveToElementText(e.target);
+      range.select();
+    } else if (window.getSelection) {
+      var range = document.createRange();
+      range.selectNode(e.target);
+      window.getSelection().addRange(range);
+    }
+  }
+}
+function setSelectable() {
+  var selectableNodes = document.querySelectorAll('.selectable');
+  for (var i = 0, len = selectableNodes.length; i < len; i++) {
+    selectableNodes[i].addEventListener('click', selectNode);
+  }
+}
+addEventListener('load', setSelectable);
+</script>
